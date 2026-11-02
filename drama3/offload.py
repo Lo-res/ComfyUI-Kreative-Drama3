@@ -24,6 +24,7 @@ import comfy.model_management
 import comfy.ops
 from comfy.quant_ops import QuantizedTensor
 from . import kernels
+from .k_quants import KQuantExperts, linear as k_quant_linear
 
 CACHE_RESERVE = 2 * 1024 ** 3
 FP8_BLOCK = 128
@@ -215,6 +216,21 @@ class HostBank:
     def to_device(self, first, last, device):
         return {n: t.to(device, non_blocking=True) for n, t in self.take(self.fields, first, last).items()}
 
+    def linear(self, fields, x):
+        return nn.functional.linear(x, self.weight(fields, x.device))
+
+
+class KQuantHostBank(HostBank):
+    """Q2_K / Q3_K experts (GGML blocks, UltimateIntent): read packed by `k_quants.linear` on the host-lookup path."""
+
+    def __init__(self, packed, in_features, bits):
+        super().__init__(packed.shape[0], {"qdata": packed.flatten(0, 1)})
+        self.in_features = in_features
+        self.bits = bits
+
+    def linear(self, fields, x, rows_per_input=None):
+        return k_quant_linear(x, fields["qdata"], self.in_features, rows_per_input, bits=self.bits)
+
 
 class QuantHostBank(HostBank):
     """A flat `comfy.ops.MoEExperts` bank (int8 ConvRot, W4A8, W6A8); its experts run as QuantizedTensors."""
@@ -314,7 +330,10 @@ class ExpertStore:
 
     def add(self, experts):
         """Take a layer's experts into host memory; returns the module that replaces them in the model."""
-        if isinstance(experts, FP8Experts):
+        if isinstance(experts, KQuantExperts):
+            banks = (KQuantHostBank(getattr(experts, f"gate_up_q{experts.bits}k"), experts.hidden, experts.bits),
+                     KQuantHostBank(getattr(experts, f"down_q{experts.bits}k"), experts.intermediate, experts.bits))
+        elif isinstance(experts, FP8Experts):
             banks = (FP8HostBank(experts.gate_up_weight, experts.gate_up_scale), FP8HostBank(experts.down_weight, experts.down_scale))
         else:
             banks = (QuantHostBank(experts.gate_up_proj), QuantHostBank(experts.down_proj))
@@ -371,6 +390,10 @@ class ExpertStore:
             return self.decode(layer, banks, x, topk_idx[0], topk_weight[0])
         if x.shape[0] == 1 and self.cache is not None:
             slots = self.cache.slots(layer, topk_idx[0].tolist(), banks)
+            if isinstance(banks[0], KQuantHostBank):
+                hidden = comfy.ops._swiglu_eager(banks[0].linear(self.cache.gather(0, slots), x).view(len(slots), -1))
+                out = banks[1].linear(self.cache.gather(1, slots), hidden, rows_per_input=x.shape[-1])
+                return (out * topk_weight[0, :, None].to(out.dtype)).sum(0, keepdim=True)
             gate_up, down = (bank.weight(self.cache.gather(index, slots), x.device) for index, bank in enumerate(banks))
             return experts_decode(x, gate_up, down, topk_weight[0])
         return self.prefill(layer, banks, x, topk_idx, topk_weight)
@@ -521,8 +544,8 @@ class ExpertStore:
             else:
                 sources = [bank.to_device(expert, expert + 1, sorted_x.device) for bank in banks]
             rows = slice(offsets[expert], offsets[expert + 1])
-            hidden = comfy.ops._swiglu_eager(nn.functional.linear(sorted_x[rows], gate_up.weight(sources[0], sorted_x.device)))
-            sorted_out[rows] = nn.functional.linear(hidden, down.weight(sources[1], sorted_x.device))
+            hidden = comfy.ops._swiglu_eager(gate_up.linear(sources[0], sorted_x[rows]))
+            sorted_out[rows] = down.linear(sources[1], hidden)
         return sorted_out
 
 

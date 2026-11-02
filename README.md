@@ -1,3 +1,11 @@
+> **ComfyUI-Kreative-Drama3: Drama 3 on 32 GB RAM PCs.**
+>
+> A fork of [PedroMarinhoDev/ComfyUI-Drama3](https://github.com/PedroMarinhoDev/ComfyUI-Drama3) by Lo-res (Kreative2AI). It adds Q2_K / Q3_K experts from [UltimateIntent](https://huggingface.co/UltimateIntent/Fish-Audio-Drama-3-Q2-Q3), so the model fits in 32 GB of RAM.
+>
+> ⚠️ Start ComfyUI with **`--disable-pinned-memory`**, or loading can fail with an out-of-memory error on 32 GB PCs. Run `tools/make_drama3_launcher.py` once to make a Drama 3 launcher from your own.
+>
+> What this fork adds, why the launcher is needed and how to make it: **[KREATIVE.md](KREATIVE.md)**. The rest of this README is Pedro's original.
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/banner-dark.png">
   <img alt="ComfyUI-Drama3: Fish Audio Drama 3 text to speech, natively in ComfyUI" src="assets/banner-light.png" width="100%">

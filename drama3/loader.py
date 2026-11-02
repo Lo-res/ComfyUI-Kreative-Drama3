@@ -103,6 +103,11 @@ def load_drama3(path, second_device=None, split=0, experts_in_ram=False, expert_
         raise ValueError(f"{os.path.basename(path)} is not a converted Drama 3 file (tools/convert.py model)")
     config = parse_config(json.loads(metadata["drama3_config"]))
     config.fp8_experts = metadata.get("drama3_format") == "fp8"
+    config.k_quant_bits = {"q2_k": 2, "q3_k": 3}.get(metadata.get("drama3_format"), 0)
+    if config.k_quant_bits and not experts_in_ram:
+        raise ValueError("Q2_K / Q3_K Drama 3 requires experts='in RAM'; its GPU cache is configured with expert_cache_gb")
+    if config.k_quant_bits and second_device is not None:
+        raise ValueError("Q2_K / Q3_K RAM offload currently supports a single GPU; set second_gpu='none'")
     quant_config = comfy.utils.detect_layer_quantization(state, "")
     dtype = torch.bfloat16
     load_device = comfy.model_management.get_torch_device()

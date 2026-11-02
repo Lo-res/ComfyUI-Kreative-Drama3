@@ -19,6 +19,7 @@ from comfy.ldm.modules.attention import optimized_attention_for_device
 from comfy.text_encoders.llama import RMSNorm, moe_experts_forward, rope_matrix
 from comfy.text_encoders.qwen35 import GatedAttention, GatedDeltaNet, LinearKV, Qwen35Transformer, Qwen35TransformerBlock
 from . import kernels
+from .k_quants import KQuantExperts
 from .offload import FP8Experts, experts_decode, gather_experts, kernel_bank, resident_decode, resident_prefill
 
 # ComfyUI's Qwen3.5 decode changed after v0.41.2 (#17007): attention layers make their own KV caches and a DeltaNet
@@ -75,7 +76,9 @@ class SparseMoeBlock(nn.Module):
         hidden = config.text.hidden_size
         self.top_k = config.num_experts_per_tok
         self.gate = ops.Linear(hidden, config.num_experts, bias=False, device=device, dtype=dtype)
-        if config.fp8_experts:
+        if config.k_quant_bits:
+            self.experts = KQuantExperts(config.num_experts, hidden, config.moe_intermediate_size, device=device, bits=config.k_quant_bits)
+        elif config.fp8_experts:
             self.experts = FP8Experts(config.num_experts, hidden, config.moe_intermediate_size, device=device, dtype=dtype)
         else:
             self.experts = Experts(config.num_experts, hidden, config.moe_intermediate_size, device=device, dtype=dtype, ops=ops)

@@ -45,6 +45,8 @@ class Drama3Config:
     shared_expert_intermediate_size: int
     # routed experts stored as the checkpoint's block FP8 (set from the converted file, not the vendor config)
     fp8_experts: bool = False
+    # Q2_K / Q3_K routed experts (UltimateIntent), 0 = not K-quant
+    k_quant_bits: int = 0
 
 
 def parse_config(config):

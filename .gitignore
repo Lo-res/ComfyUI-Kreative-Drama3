@@ -3,3 +3,20 @@ dev/reference/fish-speech/
 __pycache__/
 *.pyc
 dev/promo/data.js
+
+# Never upload audio or personal voices
+input/
+output/
+drama3_voices/
+*.wav
+*.flac
+*.mp3
+*.ogg
+*.m4a
+
+# Backups and local-only files
+*.bak
+*.pre-history-patch
+*_backup*.json
+_to_delete/
+Drama3-ComfyUI-0.43-Handover.md

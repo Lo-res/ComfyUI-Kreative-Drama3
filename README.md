@@ -5,6 +5,8 @@
 > ⚠️ Start ComfyUI with **`--disable-pinned-memory`**, or loading can fail with an out-of-memory error on 32 GB PCs. Run `tools/make_drama3_launcher.py` once to make a Drama 3 launcher from your own.
 >
 > What this fork adds, why the launcher is needed and how to make it: **[KREATIVE.md](KREATIVE.md)**. The rest of this README is Pedro's original.
+>
+> ☕ If this saved you time, you can buy me a coffee: [buymeacoffee.com/kreative2.ai](https://buymeacoffee.com/kreative2.ai)
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/banner-dark.png">

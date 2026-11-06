@@ -15,6 +15,4 @@ Documentation = "https://github.com/Lo-res/ComfyUI-Kreative-Drama3#readme"
 [tool.comfy]
 PublisherId = ""        # Lo's Registry publisher ID, still to be created
 DisplayName = "Kreative Drama 3 (Q2_K / Q3_K)"
-Icon = "https://raw.githubusercontent.com/Lo-res/ComfyUI-Kreative-Drama3/main/assets/registry-icon.png"
-Banner = "https://raw.githubusercontent.com/Lo-res/ComfyUI-Kreative-Drama3/main/assets/registry-banner.png"
 requires-comfyui = ">=0.40.0"
